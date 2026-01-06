@@ -26,8 +26,18 @@ import com.example.widgettodo.ui.main.MainActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.room.Room
-import androidx.glance.color.ColorProviders
 import androidx.compose.ui.graphics.Color
+
+// Zen Garden Widget Colors (NO TRANSPARENCY)
+object ZenWidgetColors {
+    val Washi = Color(0xFFF5F2EB)        // 和紙 - Background
+    val Sand = Color(0xFFE8E4DA)          // 砂 - Item background
+    val Moss = Color(0xFF5C7A5C)          // 苔 - Primary accent
+    val Wood = Color(0xFF8B7355)          // 木 - Secondary accent
+    val Ink = Color(0xFF2C2C2C)           // 墨 - Text
+    val White = Color(0xFFFFFFFF)         // 白 - Card
+    val Stone = Color(0xFFD4CFC4)         // 石 - Border
+}
 
 class TodoWidget : GlanceAppWidget() {
 
@@ -44,28 +54,64 @@ class TodoWidget : GlanceAppWidget() {
         }
 
         provideContent {
-            TodoWidgetContent(todos = todos)
+            ZenWidgetContent(todos = todos)
         }
     }
 }
 
 @Composable
-fun TodoWidgetContent(todos: List<Todo>) {
-    val backgroundColor = ColorProvider(Color(0x80FFFFFF))
-    val textColor = ColorProvider(Color.Black)
-    val accentColor = ColorProvider(Color(0xFF6200EE))
+fun ZenWidgetContent(todos: List<Todo>) {
+    // Zen Garden colors - NO transparency
+    val backgroundColor = ColorProvider(ZenWidgetColors.Washi)
+    val textColor = ColorProvider(ZenWidgetColors.Ink)
+    val accentColor = ColorProvider(ZenWidgetColors.Moss)
+    val itemBgColor = ColorProvider(ZenWidgetColors.White)
+    val borderColor = ColorProvider(ZenWidgetColors.Stone)
 
     GlanceTheme {
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(backgroundColor)
-                .padding(8.dp)
+                .cornerRadius(16.dp)
+                .padding(12.dp)
         ) {
-            if (todos.isEmpty()) {
-                EmptyState(textColor)
-            } else {
-                TodoList(todos, textColor)
+            Column(
+                modifier = GlanceModifier.fillMaxSize()
+            ) {
+                // Header
+                Row(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "やること",
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = textColor
+                        )
+                    )
+                }
+
+                // Divider
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(borderColor)
+                ) {}
+
+                Spacer(modifier = GlanceModifier.height(8.dp))
+
+                // Content
+                if (todos.isEmpty()) {
+                    ZenEmptyState(textColor)
+                } else {
+                    ZenTodoList(todos, textColor, accentColor, itemBgColor)
+                }
             }
 
             // FABs at bottom right
@@ -74,29 +120,33 @@ fun TodoWidgetContent(todos: List<Todo>) {
                 contentAlignment = Alignment.BottomEnd
             ) {
                 Row(
-                    modifier = GlanceModifier.padding(8.dp),
+                    modifier = GlanceModifier.padding(4.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     // App launch button
                     Box(
                         modifier = GlanceModifier
-                            .size(40.dp)
-                            .cornerRadius(20.dp)
-                            .background(accentColor)
+                            .size(36.dp)
+                            .cornerRadius(8.dp)
+                            .background(ColorProvider(ZenWidgetColors.Wood))
                             .clickable(actionStartActivity<MainActivity>()),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "📱",
-                            style = TextStyle(fontSize = 18.sp)
+                            text = "開",
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorProvider(Color.White)
+                            )
                         )
                     }
                     Spacer(modifier = GlanceModifier.width(8.dp))
                     // Add button
                     Box(
                         modifier = GlanceModifier
-                            .size(40.dp)
-                            .cornerRadius(20.dp)
+                            .size(36.dp)
+                            .cornerRadius(8.dp)
                             .background(accentColor)
                             .clickable(actionStartActivity<AddTodoActivity>()),
                         contentAlignment = Alignment.Center
@@ -104,7 +154,7 @@ fun TodoWidgetContent(todos: List<Todo>) {
                         Text(
                             text = "+",
                             style = TextStyle(
-                                fontSize = 24.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = ColorProvider(Color.White)
                             )
@@ -117,50 +167,102 @@ fun TodoWidgetContent(todos: List<Todo>) {
 }
 
 @Composable
-fun EmptyState(textColor: ColorProvider) {
+fun ZenEmptyState(textColor: ColorProvider) {
     Box(
-        modifier = GlanceModifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "+をタップしてタスクを追加",
-            style = TextStyle(
-                fontSize = 14.sp,
-                color = textColor
-            )
-        )
-    }
-}
-
-@Composable
-fun TodoList(todos: List<Todo>, textColor: ColorProvider) {
-    LazyColumn(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(bottom = 56.dp)
+            .fillMaxHeight(),
+        contentAlignment = Alignment.Center
     ) {
-        items(todos, itemId = { it.id }) { todo ->
-            TodoItem(todo = todo, textColor = textColor)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "静寂",
+                style = TextStyle(
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = ColorProvider(ZenWidgetColors.Stone)
+                )
+            )
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            Text(
+                text = "+をタップして追加",
+                style = TextStyle(
+                    fontSize = 12.sp,
+                    color = ColorProvider(ZenWidgetColors.Stone)
+                )
+            )
         }
     }
 }
 
 @Composable
-fun TodoItem(todo: Todo, textColor: ColorProvider) {
+fun ZenTodoList(
+    todos: List<Todo>,
+    textColor: ColorProvider,
+    accentColor: ColorProvider,
+    itemBgColor: ColorProvider
+) {
+    LazyColumn(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .padding(bottom = 44.dp)
+    ) {
+        items(todos, itemId = { it.id }) { todo ->
+            ZenTodoItem(
+                todo = todo,
+                textColor = textColor,
+                accentColor = accentColor,
+                itemBgColor = itemBgColor
+            )
+        }
+    }
+}
+
+@Composable
+fun ZenTodoItem(
+    todo: Todo,
+    textColor: ColorProvider,
+    accentColor: ColorProvider,
+    itemBgColor: ColorProvider
+) {
     val todoIdKey = ActionParameters.Key<Long>("todo_id")
 
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .background(itemBgColor)
+            .cornerRadius(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Left accent border (Moss green)
+        Box(
+            modifier = GlanceModifier
+                .width(3.dp)
+                .height(40.dp)
+                .background(accentColor)
+        ) {}
+
+        Text(
+            text = todo.title,
+            style = TextStyle(
+                fontSize = 13.sp,
+                color = textColor
+            ),
+            maxLines = 1,
+            modifier = GlanceModifier
+                .defaultWeight()
+                .padding(horizontal = 10.dp, vertical = 10.dp)
+        )
+
         // Checkbox
         Box(
             modifier = GlanceModifier
                 .size(24.dp)
                 .cornerRadius(4.dp)
-                .background(ColorProvider(Color(0x40000000)))
+                .background(ColorProvider(ZenWidgetColors.Sand))
                 .clickable(
                     actionRunCallback<CompleteTodoAction>(
                         actionParametersOf(todoIdKey to todo.id)
@@ -169,21 +271,43 @@ fun TodoItem(todo: Todo, textColor: ColorProvider) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "☐",
-                style = TextStyle(fontSize = 16.sp, color = textColor)
+                text = "✓",
+                style = TextStyle(
+                    fontSize = 14.sp,
+                    color = accentColor
+                )
             )
         }
+
         Spacer(modifier = GlanceModifier.width(8.dp))
-        Text(
-            text = todo.title,
-            style = TextStyle(
-                fontSize = 14.sp,
-                color = textColor
-            ),
-            maxLines = 1,
-            modifier = GlanceModifier.defaultWeight()
-        )
     }
+}
+
+// Keep old function names for compatibility
+@Composable
+fun TodoWidgetContent(todos: List<Todo>) = ZenWidgetContent(todos)
+
+@Composable
+fun EmptyState(textColor: ColorProvider) = ZenEmptyState(textColor)
+
+@Composable
+fun TodoList(todos: List<Todo>, textColor: ColorProvider) {
+    ZenTodoList(
+        todos,
+        textColor,
+        ColorProvider(ZenWidgetColors.Moss),
+        ColorProvider(ZenWidgetColors.White)
+    )
+}
+
+@Composable
+fun TodoItem(todo: Todo, textColor: ColorProvider) {
+    ZenTodoItem(
+        todo,
+        textColor,
+        ColorProvider(ZenWidgetColors.Moss),
+        ColorProvider(ZenWidgetColors.White)
+    )
 }
 
 class CompleteTodoAction : ActionCallback {
