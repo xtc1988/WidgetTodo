@@ -1,0 +1,30 @@
+# Android
+*.iml
+.gradle/
+local.properties
+.idea/
+*.apk
+*.aab
+*.ap_
+*.dex
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+output.json
+
+# Kotlin
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+
+# Keystore
+*.jks
+*.keystore
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
