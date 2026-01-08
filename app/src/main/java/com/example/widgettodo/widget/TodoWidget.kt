@@ -133,9 +133,9 @@ fun ZenWidgetContent(todos: List<Todo>) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "開",
+                            text = "↗",  // North-east arrow: "open app"
                             style = TextStyle(
-                                fontSize = 14.sp,
+                                fontSize = 18.sp,  // Slightly larger for better visibility
                                 fontWeight = FontWeight.Bold,
                                 color = ColorProvider(Color.White)
                             )
