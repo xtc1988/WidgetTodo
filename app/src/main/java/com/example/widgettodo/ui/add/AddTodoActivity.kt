@@ -1,7 +1,5 @@
 package com.example.widgettodo.ui.add
 
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,13 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.lifecycleScope
 import com.example.widgettodo.R
 import com.example.widgettodo.data.repository.TodoRepository
 import com.example.widgettodo.ui.theme.WidgetTodoTheme
 import com.example.widgettodo.widget.TodoWidget
-import com.example.widgettodo.widget.TodoWidgetReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -97,10 +94,7 @@ class AddTodoActivity : ComponentActivity() {
     }
 
     private suspend fun updateWidget() {
-        val manager = GlanceAppWidgetManager(this)
-        val glanceIds = manager.getGlanceIds(TodoWidget::class.java)
-        glanceIds.forEach { glanceId ->
-            TodoWidget().update(this, glanceId)
-        }
+        // updateAll()を使用してすべてのウィジェットを更新
+        TodoWidget().updateAll(this)
     }
 }
