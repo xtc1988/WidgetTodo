@@ -230,51 +230,56 @@ fun ZenTodoItem(
     accentColor: ColorProvider,
     itemBgColor: ColorProvider
 ) {
-    Row(
+    // Boxでラップしてclickableを付ける（LazyColumn内での動作改善）
+    Box(
         modifier = GlanceModifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
             .background(itemBgColor)
-            .cornerRadius(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .cornerRadius(4.dp)
+            .clickable(
+                actionRunCallback<CompleteTodoAction>(
+                    actionParametersOf(TODO_ID_KEY to todo.id)
+                )
+            )
     ) {
-        // Left accent border (Moss green)
-        Box(
-            modifier = GlanceModifier
-                .width(3.dp)
-                .height(28.dp)
-                .background(accentColor)
-        ) {}
-
-        Text(
-            text = todo.title,
-            style = TextStyle(
-                fontSize = 12.sp,
-                color = textColor
-            ),
-            maxLines = 1,
-            modifier = GlanceModifier
-                .defaultWeight()
-                .padding(horizontal = 8.dp, vertical = 6.dp)
-        )
-
-        // Checkbox (empty - tap to complete)
-        Box(
-            modifier = GlanceModifier
-                .size(20.dp)
-                .cornerRadius(4.dp)
-                .background(ColorProvider(ZenWidgetColors.Sand))
-                .clickable(
-                    actionRunCallback<CompleteTodoAction>(
-                        actionParametersOf(TODO_ID_KEY to todo.id)
-                    )
-                ),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Empty checkbox - no checkmark shown
-        }
+            // Left accent border (Moss green)
+            Box(
+                modifier = GlanceModifier
+                    .width(3.dp)
+                    .height(28.dp)
+                    .background(accentColor)
+            ) {}
 
-        Spacer(modifier = GlanceModifier.width(6.dp))
+            Text(
+                text = todo.title,
+                style = TextStyle(
+                    fontSize = 12.sp,
+                    color = textColor
+                ),
+                maxLines = 1,
+                modifier = GlanceModifier
+                    .defaultWeight()
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+            )
+
+            // Checkbox indicator (tap anywhere on row to complete)
+            Box(
+                modifier = GlanceModifier
+                    .size(20.dp)
+                    .cornerRadius(4.dp)
+                    .background(ColorProvider(ZenWidgetColors.Sand)),
+                contentAlignment = Alignment.Center
+            ) {
+                // Empty checkbox indicator
+            }
+
+            Spacer(modifier = GlanceModifier.width(6.dp))
+        }
     }
 }
 
