@@ -28,6 +28,9 @@ import kotlinx.coroutines.withContext
 import androidx.room.Room
 import androidx.compose.ui.graphics.Color
 
+// Shared ActionParameters Key (MUST be top-level constant)
+private val TODO_ID_KEY = ActionParameters.Key<Long>("todo_id")
+
 // Zen Garden Widget Colors (NO TRANSPARENCY)
 object ZenWidgetColors {
     val Washi = Color(0xFFF5F2EB)        // 和紙 - Background
@@ -227,8 +230,6 @@ fun ZenTodoItem(
     accentColor: ColorProvider,
     itemBgColor: ColorProvider
 ) {
-    val todoIdKey = ActionParameters.Key<Long>("todo_id")
-
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -257,7 +258,7 @@ fun ZenTodoItem(
                 .padding(horizontal = 8.dp, vertical = 6.dp)
         )
 
-        // Checkbox
+        // Checkbox (empty - tap to complete)
         Box(
             modifier = GlanceModifier
                 .size(20.dp)
@@ -265,18 +266,12 @@ fun ZenTodoItem(
                 .background(ColorProvider(ZenWidgetColors.Sand))
                 .clickable(
                     actionRunCallback<CompleteTodoAction>(
-                        actionParametersOf(todoIdKey to todo.id)
+                        actionParametersOf(TODO_ID_KEY to todo.id)
                     )
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "✓",
-                style = TextStyle(
-                    fontSize = 12.sp,
-                    color = accentColor
-                )
-            )
+            // Empty checkbox - no checkmark shown
         }
 
         Spacer(modifier = GlanceModifier.width(6.dp))
@@ -316,8 +311,7 @@ class CompleteTodoAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        val todoIdKey = ActionParameters.Key<Long>("todo_id")
-        val todoId = parameters[todoIdKey] ?: return
+        val todoId = parameters[TODO_ID_KEY] ?: return
 
         withContext(Dispatchers.IO) {
             val db = Room.databaseBuilder(
