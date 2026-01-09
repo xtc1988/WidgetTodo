@@ -1,5 +1,152 @@
 # Known Issues - WidgetTodo
 
+## Active Issues
+
+_現在、アクティブな問題はありません_
+
+---
+
+## Resolved Issues
+
+### [FIXED] TODO追加時にウィジェットが更新されない・既存が消える
+
+**Discovered:** 2026-01-10
+**Fixed:** 2026-01-10
+**Severity:** High (Core feature broken)
+
+#### Description
+TODOを追加すると以下の問題が発生：
+1. 既存のTODOが消える場合がある
+2. ウィジェットに新規TODOが反映されない
+
+#### Root Cause
+**3つの根本原因を特定：**
+
+| 原因 | 重要度 | 詳細 |
+|------|--------|------|
+| 複数Databaseインスタンス | **CRITICAL** | TodoWidget.kt, CompleteTodoAction で毎回新しいRoom Databaseインスタンスを生成。WALモードでキャッシュ不一致が発生 |
+| レース条件 | MEDIUM | `repository.addTodo()` の完了を待たずに `updateWidget()` が実行され、古いデータが取得される |
+| State同期問題 | MEDIUM | ウィジェットがSingleton DBを使用していないため、メインアプリとのデータ同期が取れない |
+
+**問題の流れ：**
+```
+[MainViewModel]      [TodoWidget]
+    │                    │
+    ▼                    ▼
+ Database A          Database B (毎回新規生成)
+    │                    │
+    ▼                    ▼
+ addTodo()実行     ──→ getAllTodosOnce()実行
+    │                    │
+ [A,B]をinsert         [A]しか見えない (キャッシュ遅延)
+```
+
+#### Fix Applied
+
+**1. TodoDatabase.kt - Singleton パターン追加：**
+```kotlin
+companion object {
+    @Volatile
+    private var INSTANCE: TodoDatabase? = null
+
+    fun getInstance(context: Context): TodoDatabase {
+        return INSTANCE ?: synchronized(this) {
+            INSTANCE ?: Room.databaseBuilder(...)
+                .build().also { INSTANCE = it }
+        }
+    }
+}
+```
+
+**2. TodoWidget.kt - Singleton Database使用：**
+```kotlin
+// Before (毎回新規生成)
+val db = Room.databaseBuilder(...).build()
+
+// After (Singleton)
+val db = TodoDatabase.getInstance(context)
+```
+
+**3. MainViewModel.kt / AddTodoActivity.kt - レース条件解消：**
+```kotlin
+// Before
+repository.addTodo(title)
+updateWidget()
+
+// After (DB完了を待ってから更新)
+withContext(Dispatchers.IO) {
+    repository.addTodo(title)
+}
+updateWidget()
+```
+
+#### Prevention Measures
+- [x] TodoDatabase に Singleton パターンを実装
+- [x] ウィジェットでは常に `TodoDatabase.getInstance()` を使用
+- [x] DB操作完了後にウィジェット更新を実行
+
+#### Related Files
+- `app/src/main/java/com/example/widgettodo/data/local/TodoDatabase.kt`
+- `app/src/main/java/com/example/widgettodo/widget/TodoWidget.kt`
+- `app/src/main/java/com/example/widgettodo/ui/main/MainViewModel.kt`
+- `app/src/main/java/com/example/widgettodo/ui/add/AddTodoActivity.kt`
+
+---
+
+### [INVESTIGATING] Widget TODO tap not responding
+
+**Discovered:** 2026-01-10
+**Status:** Investigating
+**Severity:** High (Core feature broken)
+
+#### Description
+ウィジェットのTODOアイテムをタップしても、CompleteTodoActionが呼ばれず、アイテムが削除されない。
+
+#### Reproduction Steps
+1. ホーム画面にWidgetTodoウィジェットを配置
+2. アプリでTODOを追加
+3. ウィジェット上のTODOアイテムをタップ
+4. → 何も起きない（アイテムが削除されない）
+
+#### Expected Behavior
+タップするとTODOが削除され、ウィジェットが更新される
+
+#### Actual Behavior
+タップしても何も反応しない
+
+#### Investigation Log (2026-01-10)
+
+**ログ分析結果：**
+| 項目 | 結果 |
+|------|------|
+| CompleteTodoAction ログ | **出力なし** → onAction未呼出 |
+| Glance SessionWorker | 正常動作 |
+| 例外・エラー | なし |
+
+**ソースコード確認結果：**
+| 項目 | 状態 | 行番号 |
+|------|------|--------|
+| TODO_ID_KEY | ✅ トップレベル定数 | 32 |
+| ZenTodoList | ✅ Column使用（LazyColumn回避） | 211-224 |
+| ZenTodoItem.clickable | ✅ 外側Boxに設定 | 241-245 |
+| CompleteTodoAction | ✅ ログ追加済み | 320-344 |
+
+**根本原因（推定）：**
+ソースコードにはログが追加されているが、logcatにログが出力されていない。
+→ **現在実行中のAPKは最新のソースコードでビルドされていない可能性が高い**
+
+#### Next Steps
+1. [ ] 最新コードでビルド・インストール: `.\gradlew.bat clean assembleDebug installDebug --no-daemon`
+2. [ ] ウィジェットを削除して再配置
+3. [ ] TODOをタップしてログを確認: `adb logcat -s CompleteTodoAction`
+4. [ ] ログが出力されるか確認
+
+#### Related PRs
+- PR #4: feat: Widget taller, compact items, fix tap to complete
+- PR #5: fix: ウィジェットTODOタップ動作改善（Boxラップ）
+
+---
+
 ## Resolved Issues
 
 ### [FIXED] Android Studio Gradle Version Cache Mismatch

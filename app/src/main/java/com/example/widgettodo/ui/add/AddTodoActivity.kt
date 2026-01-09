@@ -19,7 +19,9 @@ import com.example.widgettodo.ui.theme.WidgetTodoTheme
 import com.example.widgettodo.widget.TodoWidget
 import com.example.widgettodo.widget.TodoWidgetReceiver
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -84,7 +86,11 @@ class AddTodoActivity : ComponentActivity() {
 
     private fun addTodoAndFinish(title: String) {
         lifecycleScope.launch {
-            repository.addTodo(title)
+            // DB書き込みをIOスレッドで実行し、完了を待つ
+            withContext(Dispatchers.IO) {
+                repository.addTodo(title)
+            }
+            // DB書き込み完了後にウィジェット更新
             updateWidget()
             finish()
         }

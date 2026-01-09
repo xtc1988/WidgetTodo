@@ -25,7 +25,7 @@ import com.example.widgettodo.ui.add.AddTodoActivity
 import com.example.widgettodo.ui.main.MainActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.room.Room
+import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.Color
 
 // Shared ActionParameters Key (MUST be top-level constant)
@@ -47,12 +47,9 @@ class TodoWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Singleton Databaseを使用してキャッシュ不一致を防止
         val todos = withContext(Dispatchers.IO) {
-            val db = Room.databaseBuilder(
-                context.applicationContext,
-                TodoDatabase::class.java,
-                "todo_database"
-            ).build()
+            val db = TodoDatabase.getInstance(context)
             db.todoDao().getAllTodosOnce()
         }
 
@@ -207,12 +204,13 @@ fun ZenTodoList(
     accentColor: ColorProvider,
     itemBgColor: ColorProvider
 ) {
-    LazyColumn(
+    // LazyColumnではなくColumnを使用（LazyColumn内のclickableが動作しない問題の回避）
+    Column(
         modifier = GlanceModifier
             .fillMaxWidth()
             .padding(bottom = 44.dp)
     ) {
-        items(todos, itemId = { it.id }) { todo ->
+        todos.forEach { todo ->
             ZenTodoItem(
                 todo = todo,
                 textColor = textColor,
@@ -316,17 +314,27 @@ class CompleteTodoAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        val todoId = parameters[TODO_ID_KEY] ?: return
+        android.util.Log.d("CompleteTodoAction", "=== onAction CALLED ===")
+        android.util.Log.d("CompleteTodoAction", "parameters: $parameters")
 
-        withContext(Dispatchers.IO) {
-            val db = Room.databaseBuilder(
-                context.applicationContext,
-                TodoDatabase::class.java,
-                "todo_database"
-            ).build()
-            db.todoDao().deleteById(todoId)
+        val todoId = parameters[TODO_ID_KEY]
+        android.util.Log.d("CompleteTodoAction", "todoId: $todoId")
+
+        if (todoId == null) {
+            android.util.Log.e("CompleteTodoAction", "todoId is NULL! TODO_ID_KEY not found in parameters")
+            return
         }
 
+        withContext(Dispatchers.IO) {
+            android.util.Log.d("CompleteTodoAction", "Deleting todo with id: $todoId")
+            // Singleton Databaseを使用
+            val db = TodoDatabase.getInstance(context)
+            db.todoDao().deleteById(todoId)
+            android.util.Log.d("CompleteTodoAction", "Delete completed")
+        }
+
+        android.util.Log.d("CompleteTodoAction", "Updating widget...")
         TodoWidget().update(context, glanceId)
+        android.util.Log.d("CompleteTodoAction", "Widget updated")
     }
 }
