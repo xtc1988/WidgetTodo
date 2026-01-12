@@ -1,12 +1,11 @@
 package com.example.widgettodo.ui.main
 
 import android.content.Context
-import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.widgettodo.data.local.entity.Todo
 import com.example.widgettodo.data.repository.TodoRepository
-import com.example.widgettodo.widget.TodoWidget
+import com.example.widgettodo.widget.TodoWidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +34,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAllTodos().collect { todos ->
                 _uiState.value = _uiState.value.copy(todos = todos)
+                android.util.Log.d("MainViewModel", "Todos updated; refreshing widget")
+                updateWidget()
             }
         }
     }
@@ -54,8 +55,8 @@ class MainViewModel @Inject constructor(
     private suspend fun updateWidget() {
         android.util.Log.d("MainViewModel", "updateWidget() called - using updateAll()")
         try {
-            // updateAll()を使用してすべてのウィジェットを更新
-            TodoWidget().updateAll(context)
+            // アクティブなウィジェットを確実に更新
+            TodoWidgetUpdater.updateAll(context)
             android.util.Log.d("MainViewModel", "Widget updateAll() completed")
         } catch (e: Exception) {
             android.util.Log.e("MainViewModel", "Widget update failed", e)
@@ -66,6 +67,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteTodo(todo)
             _uiState.value = _uiState.value.copy(lastDeletedTodo = todo)
+            android.util.Log.d("MainViewModel", "Todo deleted; refreshing widget")
+            updateWidget()
         }
     }
 
@@ -74,6 +77,8 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.undoDelete(todo)
             _uiState.value = _uiState.value.copy(lastDeletedTodo = null)
+            android.util.Log.d("MainViewModel", "Todo undo; refreshing widget")
+            updateWidget()
         }
     }
 

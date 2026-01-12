@@ -9,12 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.lifecycleScope
 import com.example.widgettodo.R
 import com.example.widgettodo.data.repository.TodoRepository
 import com.example.widgettodo.ui.theme.WidgetTodoTheme
-import com.example.widgettodo.widget.TodoWidget
+import com.example.widgettodo.widget.TodoWidgetUpdater
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -94,7 +93,9 @@ class AddTodoActivity : ComponentActivity() {
     }
 
     private suspend fun updateWidget() {
-        // updateAll()を使用してすべてのウィジェットを更新
-        TodoWidget().updateAll(this)
+        // アクティブなウィジェットを確実に更新
+        android.util.Log.d("AddTodoActivity", "updateWidget() start")
+        TodoWidgetUpdater.updateAll(applicationContext)
+        android.util.Log.d("AddTodoActivity", "updateWidget() completed")
     }
 }

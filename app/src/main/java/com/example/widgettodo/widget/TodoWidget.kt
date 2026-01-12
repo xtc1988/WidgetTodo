@@ -47,11 +47,13 @@ class TodoWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Single
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        android.util.Log.d("TodoWidget", "provideGlance() start id=$id")
         // Singleton Databaseを使用してキャッシュ不一致を防止
         val todos = withContext(Dispatchers.IO) {
             val db = TodoDatabase.getInstance(context)
             db.todoDao().getAllTodosOnce()
         }
+        android.util.Log.d("TodoWidget", "provideGlance() todos size=${todos.size}")
 
         provideContent {
             ZenWidgetContent(todos = todos)
