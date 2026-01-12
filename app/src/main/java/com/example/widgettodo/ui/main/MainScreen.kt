@@ -20,9 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.widgettodo.BuildConfig
 import com.example.widgettodo.R
 import com.example.widgettodo.data.local.entity.Todo
-import com.example.widgettodo.ui.theme.ZenColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +63,14 @@ fun MainScreen(
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 2.sp
                         )
+                    )
+                },
+                actions = {
+                    Text(
+                        text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(end = 12.dp)
                     )
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
