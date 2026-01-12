@@ -34,6 +34,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getAllTodos().collect { todos ->
                 _uiState.value = _uiState.value.copy(todos = todos)
+                updateWidget()
             }
         }
     }
