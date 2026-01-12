@@ -46,15 +46,44 @@ class TodoWidget : GlanceAppWidget() {
 
     override val sizeMode = SizeMode.Single
 
+    // Use GlanceStateDefinition to trigger updates when state changes
+    override val stateDefinition = TodoWidgetStateDefinition
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Singleton Databaseを使用してキャッシュ不一致を防止
-        val todos = withContext(Dispatchers.IO) {
-            val db = TodoDatabase.getInstance(context)
-            db.todoDao().getAllTodosOnce()
-        }
+        android.util.Log.d("TodoWidget", "=== provideGlance() START === id: $id, instance: $this")
 
         provideContent {
+            // Read state inside composable to make widget react to state changes
+            val prefs = currentState<androidx.datastore.preferences.core.Preferences>()
+            val lastUpdate = prefs[TodoWidgetStateDefinition.LAST_UPDATE_KEY] ?: 0L
+            val todosJson = prefs[TodoWidgetStateDefinition.TODOS_JSON_KEY] ?: "[]"
+
+            android.util.Log.d("TodoWidget", "State lastUpdate timestamp: $lastUpdate")
+            android.util.Log.d("TodoWidget", "State todosJson: $todosJson")
+
+            // Parse todos from JSON
+            val todos = parseTodosFromJson(todosJson)
+            android.util.Log.d("TodoWidget", "Parsed ${todos.size} todos from state")
+
             ZenWidgetContent(todos = todos)
+        }
+        android.util.Log.d("TodoWidget", "=== provideGlance() END ===")
+    }
+
+    private fun parseTodosFromJson(json: String): List<Todo> {
+        return try {
+            val jsonArray = org.json.JSONArray(json)
+            (0 until jsonArray.length()).map { i ->
+                val obj = jsonArray.getJSONObject(i)
+                Todo(
+                    id = obj.getLong("id"),
+                    title = obj.getString("title"),
+                    createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TodoWidget", "Error parsing todos JSON", e)
+            emptyList()
         }
     }
 }
@@ -333,8 +362,9 @@ class CompleteTodoAction : ActionCallback {
             android.util.Log.d("CompleteTodoAction", "Delete completed")
         }
 
-        android.util.Log.d("CompleteTodoAction", "Updating widget...")
-        TodoWidget().update(context, glanceId)
+        android.util.Log.d("CompleteTodoAction", "Updating widget via TodoWidgetUpdater...")
+        // Use TodoWidgetUpdater to properly trigger state change and update
+        TodoWidgetUpdater.updateAll(context)
         android.util.Log.d("CompleteTodoAction", "Widget updated")
     }
 }

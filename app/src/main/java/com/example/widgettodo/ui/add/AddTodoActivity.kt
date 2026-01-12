@@ -81,19 +81,25 @@ class AddTodoActivity : ComponentActivity() {
     }
 
     private fun addTodoAndFinish(title: String) {
+        android.util.Log.d("AddTodoActivity", "=== addTodoAndFinish() START === title: $title")
         lifecycleScope.launch {
             // DB書き込みをIOスレッドで実行し、完了を待つ
+            android.util.Log.d("AddTodoActivity", "Adding todo to DB...")
             withContext(Dispatchers.IO) {
                 repository.addTodo(title)
             }
+            android.util.Log.d("AddTodoActivity", "DB write completed, calling updateWidget()")
             // DB書き込み完了後にウィジェット更新
             updateWidget()
+            android.util.Log.d("AddTodoActivity", "updateWidget() completed, finishing activity")
             finish()
         }
     }
 
     private suspend fun updateWidget() {
+        android.util.Log.d("AddTodoActivity", "=== updateWidget() START ===")
         // アクティブなウィジェットを確実に更新
         TodoWidgetUpdater.updateAll(applicationContext)
+        android.util.Log.d("AddTodoActivity", "=== updateWidget() END ===")
     }
 }

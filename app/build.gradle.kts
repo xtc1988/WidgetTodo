@@ -41,6 +41,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -66,6 +67,9 @@ dependencies {
     // Glance (Widget)
     implementation("androidx.glance:glance-appwidget:1.0.0")
     implementation("androidx.glance:glance-material3:1.0.0")
+
+    // DataStore (for Glance state management)
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // Room
     implementation("androidx.room:room-runtime:2.6.1")
