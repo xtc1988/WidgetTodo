@@ -10,9 +10,9 @@ import androidx.glance.state.GlanceStateDefinition
 import java.io.File
 
 /**
- * GlanceStateDefinition for TodoWidget.
- * Uses DataStore Preferences to track update timestamps and todo data.
- * When the state changes, Glance will re-compose the widget.
+ * TodoWidget用のGlanceStateDefinition
+ * DataStore Preferencesを使用して更新タイムスタンプとTODOデータを管理
+ * Stateが変更されるとGlanceがウィジェットを再描画する
  */
 object TodoWidgetStateDefinition : GlanceStateDefinition<Preferences> {
 
@@ -20,10 +20,10 @@ object TodoWidgetStateDefinition : GlanceStateDefinition<Preferences> {
 
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = DATA_STORE_NAME)
 
-    // Key for tracking last update time
+    // 最終更新時刻を追跡するキー
     val LAST_UPDATE_KEY = longPreferencesKey("last_update_timestamp")
 
-    // Key for storing todo data as JSON string
+    // TODOデータをJSON文字列として保存するキー
     val TODOS_JSON_KEY = stringPreferencesKey("todos_json")
 
     override suspend fun getDataStore(context: Context, fileKey: String): DataStore<Preferences> {

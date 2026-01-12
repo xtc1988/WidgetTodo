@@ -27,14 +27,14 @@ object TodoWidgetUpdater {
             return
         }
 
-        // Fetch todos from database
+        // データベースからTODOを取得
         val todos = withContext(Dispatchers.IO) {
             val db = TodoDatabase.getInstance(context)
             db.todoDao().getAllTodosOnce()
         }
         Log.d(TAG, "Fetched ${todos.size} todos from DB")
 
-        // Convert todos to JSON string
+        // TODOをJSON文字列に変換
         val todosJson = JSONArray().apply {
             todos.forEach { todo ->
                 put(JSONObject().apply {
@@ -46,7 +46,7 @@ object TodoWidgetUpdater {
         }.toString()
         Log.d(TAG, "Todos JSON: $todosJson")
 
-        // Update state for each widget
+        // 各ウィジェットのStateを更新
         val timestamp = System.currentTimeMillis()
         Log.d(TAG, "Updating state timestamp to: $timestamp")
 
@@ -60,7 +60,7 @@ object TodoWidgetUpdater {
             }
         }
 
-        // Now call update to trigger re-composition with new state
+        // 新しいStateで再描画をトリガーするためupdateAllを呼び出す
         Log.d(TAG, "Calling TodoWidget().updateAll(context)...")
         TodoWidget().updateAll(context)
         Log.d(TAG, "TodoWidget().updateAll(context) completed")
