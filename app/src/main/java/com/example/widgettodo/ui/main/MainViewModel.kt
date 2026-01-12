@@ -1,7 +1,7 @@
 package com.example.widgettodo.ui.main
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.widgettodo.data.local.entity.Todo
@@ -52,16 +52,11 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun updateWidget() {
-        android.util.Log.d("MainViewModel", "updateWidget() called")
+        android.util.Log.d("MainViewModel", "updateWidget() called - using updateAll()")
         try {
-            val manager = GlanceAppWidgetManager(context)
-            val glanceIds = manager.getGlanceIds(TodoWidget::class.java)
-            android.util.Log.d("MainViewModel", "Found ${glanceIds.size} widgets to update")
-            glanceIds.forEach { glanceId ->
-                android.util.Log.d("MainViewModel", "Updating widget: $glanceId")
-                TodoWidget().update(context, glanceId)
-            }
-            android.util.Log.d("MainViewModel", "Widget update completed")
+            // updateAll()を使用してすべてのウィジェットを更新
+            TodoWidget().updateAll(context)
+            android.util.Log.d("MainViewModel", "Widget updateAll() completed")
         } catch (e: Exception) {
             android.util.Log.e("MainViewModel", "Widget update failed", e)
         }
