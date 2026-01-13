@@ -1,12 +1,14 @@
 package com.example.widgettodo
 
+import android.content.Context
 import com.example.widgettodo.data.local.entity.Todo
 import com.example.widgettodo.data.repository.TodoRepository
 import com.example.widgettodo.ui.main.MainViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -17,6 +19,8 @@ import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.whenever
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -25,8 +29,11 @@ class MainViewModelTest {
     @Mock
     private lateinit var repository: TodoRepository
 
+    @Mock
+    private lateinit var context: Context
+
     private lateinit var viewModel: MainViewModel
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {
@@ -39,7 +46,14 @@ class MainViewModelTest {
         )
         `when`(repository.getAllTodos()).thenReturn(flowOf(testTodos))
 
-        viewModel = MainViewModel(repository)
+        // suspend関数のモック設定
+        runBlocking {
+            whenever(repository.addTodo(org.mockito.kotlin.any())).thenReturn(1L)
+            whenever(repository.deleteTodo(org.mockito.kotlin.any())).thenReturn(Unit)
+            whenever(repository.undoDelete(org.mockito.kotlin.any())).thenReturn(1L)
+        }
+
+        viewModel = MainViewModel(repository, context)
     }
 
     @After
@@ -49,7 +63,7 @@ class MainViewModelTest {
 
     @Test
     fun `initial state contains todos from repository`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         val state = viewModel.uiState.value
         assertEquals(2, state.todos.size)
@@ -59,18 +73,19 @@ class MainViewModelTest {
     @Test
     fun `addTodo calls repository addTodo`() = runTest {
         viewModel.addTodo("New Todo")
-        testDispatcher.scheduler.advanceUntilIdle()
+        // Dispatchers.IOで実行されるため、少し待機
+        delay(100)
 
         verify(repository).addTodo("New Todo")
     }
 
     @Test
     fun `deleteTodo calls repository deleteTodo and stores for undo`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         val todoToDelete = Todo(id = 1, title = "Test Todo 1")
         viewModel.deleteTodo(todoToDelete)
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         verify(repository).deleteTodo(todoToDelete)
         assertEquals(todoToDelete, viewModel.uiState.value.lastDeletedTodo)
@@ -78,14 +93,14 @@ class MainViewModelTest {
 
     @Test
     fun `undoDelete restores last deleted todo`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         val todoToDelete = Todo(id = 1, title = "Test Todo 1")
         viewModel.deleteTodo(todoToDelete)
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         viewModel.undoDelete()
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         verify(repository).undoDelete(todoToDelete)
         assertNull(viewModel.uiState.value.lastDeletedTodo)
@@ -93,11 +108,11 @@ class MainViewModelTest {
 
     @Test
     fun `clearLastDeleted clears lastDeletedTodo`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         val todoToDelete = Todo(id = 1, title = "Test Todo 1")
         viewModel.deleteTodo(todoToDelete)
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         viewModel.clearLastDeleted()
 
@@ -107,7 +122,7 @@ class MainViewModelTest {
     @Test
     fun `addTodo with blank title does nothing`() = runTest {
         viewModel.addTodo("   ")
-        testDispatcher.scheduler.advanceUntilIdle()
+        // UnconfinedTestDispatcherは即座に実行するためadvanceは不要
 
         // No call to repository should be made
         // This test verifies the blank check works
