@@ -28,10 +28,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.Color
 
-// Shared ActionParameters Key (MUST be top-level constant)
+// 共有ActionParametersキー（トップレベル定数である必要あり）
 private val TODO_ID_KEY = ActionParameters.Key<Long>("todo_id")
 
-// Zen Garden Widget Colors (NO TRANSPARENCY)
+// 禅庭園ウィジェットカラー（透明度なし）
 object ZenWidgetColors {
     val Washi = Color(0xFFF5F2EB)        // 和紙 - Background
     val Sand = Color(0xFFE8E4DA)          // 砂 - Item background
@@ -46,22 +46,51 @@ class TodoWidget : GlanceAppWidget() {
 
     override val sizeMode = SizeMode.Single
 
+    // GlanceStateDefinitionを使用してState変更時に更新をトリガー
+    override val stateDefinition = TodoWidgetStateDefinition
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Singleton Databaseを使用してキャッシュ不一致を防止
-        val todos = withContext(Dispatchers.IO) {
-            val db = TodoDatabase.getInstance(context)
-            db.todoDao().getAllTodosOnce()
-        }
+        android.util.Log.d("TodoWidget", "=== provideGlance() START === id: $id, instance: $this")
 
         provideContent {
+            // Composable内でStateを読み取り、State変更に反応させる
+            val prefs = currentState<androidx.datastore.preferences.core.Preferences>()
+            val lastUpdate = prefs[TodoWidgetStateDefinition.LAST_UPDATE_KEY] ?: 0L
+            val todosJson = prefs[TodoWidgetStateDefinition.TODOS_JSON_KEY] ?: "[]"
+
+            android.util.Log.d("TodoWidget", "State lastUpdate timestamp: $lastUpdate")
+            android.util.Log.d("TodoWidget", "State todosJson: $todosJson")
+
+            // JSONからTODOをパース
+            val todos = parseTodosFromJson(todosJson)
+            android.util.Log.d("TodoWidget", "Parsed ${todos.size} todos from state")
+
             ZenWidgetContent(todos = todos)
+        }
+        android.util.Log.d("TodoWidget", "=== provideGlance() END ===")
+    }
+
+    private fun parseTodosFromJson(json: String): List<Todo> {
+        return try {
+            val jsonArray = org.json.JSONArray(json)
+            (0 until jsonArray.length()).map { i ->
+                val obj = jsonArray.getJSONObject(i)
+                Todo(
+                    id = obj.getLong("id"),
+                    title = obj.getString("title"),
+                    createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TodoWidget", "Error parsing todos JSON", e)
+            emptyList()
         }
     }
 }
 
 @Composable
 fun ZenWidgetContent(todos: List<Todo>) {
-    // Zen Garden colors - NO transparency
+    // 禅庭園カラー - 透明度なし
     val backgroundColor = ColorProvider(ZenWidgetColors.Washi)
     val textColor = ColorProvider(ZenWidgetColors.Ink)
     val accentColor = ColorProvider(ZenWidgetColors.Moss)
@@ -79,7 +108,7 @@ fun ZenWidgetContent(todos: List<Todo>) {
             Column(
                 modifier = GlanceModifier.fillMaxSize()
             ) {
-                // Header
+                // ヘッダー
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
@@ -96,7 +125,7 @@ fun ZenWidgetContent(todos: List<Todo>) {
                     )
                 }
 
-                // Divider
+                // 区切り線
                 Box(
                     modifier = GlanceModifier
                         .fillMaxWidth()
@@ -106,7 +135,7 @@ fun ZenWidgetContent(todos: List<Todo>) {
 
                 Spacer(modifier = GlanceModifier.height(8.dp))
 
-                // Content
+                // コンテンツ
                 if (todos.isEmpty()) {
                     ZenEmptyState(textColor)
                 } else {
@@ -114,7 +143,7 @@ fun ZenWidgetContent(todos: List<Todo>) {
                 }
             }
 
-            // FABs at bottom right
+            // 右下のFABボタン
             Box(
                 modifier = GlanceModifier.fillMaxSize(),
                 contentAlignment = Alignment.BottomEnd
@@ -123,7 +152,7 @@ fun ZenWidgetContent(todos: List<Todo>) {
                     modifier = GlanceModifier.padding(4.dp),
                     horizontalAlignment = Alignment.End
                 ) {
-                    // App launch button
+                    // アプリ起動ボタン
                     Box(
                         modifier = GlanceModifier
                             .size(36.dp)
@@ -133,16 +162,16 @@ fun ZenWidgetContent(todos: List<Todo>) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "↗",  // North-east arrow: "open app"
+                            text = "↗",  // 北東矢印: アプリを開く
                             style = TextStyle(
-                                fontSize = 18.sp,  // Slightly larger for better visibility
+                                fontSize = 18.sp,  // 視認性向上のため少し大きめ
                                 fontWeight = FontWeight.Bold,
                                 color = ColorProvider(Color.White)
                             )
                         )
                     }
                     Spacer(modifier = GlanceModifier.width(8.dp))
-                    // Add button
+                    // 追加ボタン
                     Box(
                         modifier = GlanceModifier
                             .size(36.dp)
@@ -245,7 +274,7 @@ fun ZenTodoItem(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left accent border (Moss green)
+            // 左側アクセントボーダー（苔色）
             Box(
                 modifier = GlanceModifier
                     .width(3.dp)
@@ -265,7 +294,7 @@ fun ZenTodoItem(
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             )
 
-            // Checkbox indicator (tap anywhere on row to complete)
+            // チェックボックスインジケーター（行のどこをタップしても完了）
             Box(
                 modifier = GlanceModifier
                     .size(20.dp)
@@ -273,7 +302,7 @@ fun ZenTodoItem(
                     .background(ColorProvider(ZenWidgetColors.Sand)),
                 contentAlignment = Alignment.Center
             ) {
-                // Empty checkbox indicator
+                // 空のチェックボックスインジケーター
             }
 
             Spacer(modifier = GlanceModifier.width(6.dp))
@@ -281,7 +310,7 @@ fun ZenTodoItem(
     }
 }
 
-// Keep old function names for compatibility
+// 互換性のため旧関数名を維持
 @Composable
 fun TodoWidgetContent(todos: List<Todo>) = ZenWidgetContent(todos)
 
@@ -333,8 +362,9 @@ class CompleteTodoAction : ActionCallback {
             android.util.Log.d("CompleteTodoAction", "Delete completed")
         }
 
-        android.util.Log.d("CompleteTodoAction", "Updating widget...")
-        TodoWidget().update(context, glanceId)
+        android.util.Log.d("CompleteTodoAction", "Updating widget via TodoWidgetUpdater...")
+        // TodoWidgetUpdaterを使用してState変更とウィジェット更新を適切にトリガー
+        TodoWidgetUpdater.updateAll(context)
         android.util.Log.d("CompleteTodoAction", "Widget updated")
     }
 }
