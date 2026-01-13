@@ -8,6 +8,53 @@ _現在、アクティブな問題はありません_
 
 ## Resolved Issues
 
+### [FIXED] Hilt + Compose UIテストで「No compose hierarchies found」エラー
+
+**Discovered:** 2026-01-13
+**Fixed:** 2026-01-13
+**Severity:** High (Test failure)
+
+#### Description
+Instrumented テスト（`connectedDebugAndroidTest`）実行時に全テストが以下のエラーで失敗：
+```
+java.lang.IllegalStateException: No compose hierarchies found in the app.
+Possible reasons include: (1) the Activity that calls setContent did not launch;
+(2) setContent was not called; (3) setContent was called before the ComposeTestRule ran.
+```
+
+#### Root Cause
+**インクリメンタルビルドでの不整合：**
+- Activityは正常に起動している（logcatで「Displayed」メッセージを確認）
+- しかしComposeTestRuleがCompose階層を検出できない
+- HiltのDIモジュール変更後、インクリメンタルビルドでキャッシュ不整合が発生
+
+#### Fix Applied
+
+**クリーンビルドを実行：**
+```powershell
+.\gradlew.bat clean --no-daemon
+.\gradlew.bat connectedDebugAndroidTest --no-daemon
+```
+
+**また、AppModule.ktでDatabaseのSingleton使用を確認：**
+```kotlin
+@Provides
+@Singleton
+fun provideTodoDatabase(@ApplicationContext context: Context): TodoDatabase {
+    return TodoDatabase.getInstance(context)  // マイグレーション含むSingleton
+}
+```
+
+#### Prevention Measures
+- [x] Hilt DIモジュール変更後はクリーンビルドを実行
+- [x] CI環境では常にクリーンビルドを実行（`.github/workflows/android-ci.yml`で対応済み）
+- [x] Room Databaseは`TodoDatabase.getInstance()`を使用してSingletonとマイグレーションを保証
+
+#### Related
+- PR #14: GitHub Actions CIの構築
+
+---
+
 ### [FIXED] GlanceのState更新でウィジェットが再描画されない
 
 **Discovered:** 2026-01-12
