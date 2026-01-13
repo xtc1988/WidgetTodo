@@ -34,7 +34,9 @@ class AddTodoActivity : ComponentActivity() {
                 var text by remember { mutableStateOf("") }
 
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column(
