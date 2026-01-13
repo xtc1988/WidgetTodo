@@ -8,6 +8,46 @@ _現在、アクティブな問題はありません_
 
 ## Resolved Issues
 
+### [FIXED] GlanceのState更新でウィジェットが再描画されない
+
+**Discovered:** 2026-01-12
+**Fixed:** 2026-01-12
+**Severity:** High (Core feature broken)
+
+#### Description
+TODO追加後、`widget.update()`や`widget.updateAll()`を呼んでもウィジェットのUIが更新されない。
+
+#### Root Cause
+**Glanceの仕様:**
+- `update()`/`updateAll()`は実行中のセッションでは`provideGlance()`を再起動しない
+- `provideGlance()`内でDBから直接データを取得しても、再実行されないため更新されない
+
+#### Fix Applied
+
+**GlanceStateDefinitionを使用してState経由でデータを渡す：**
+
+1. `TodoWidgetStateDefinition.kt` - DataStoreベースのState定義を新規作成
+2. `TodoWidgetUpdater.kt` - DBからTODO取得→JSON化→Stateに保存
+3. `TodoWidget.kt` - `provideContent`内でStateからJSONを読み取り、パース
+
+**データフロー：**
+```
+DB変更 → TodoWidgetUpdater
+       → updateAppWidgetState(JSON)
+       → TodoWidget().updateAll()
+       → provideContent再実行
+       → State読み取り → UI更新
+```
+
+#### Prevention Measures
+- [x] Glanceウィジェットではデータを`GlanceStateDefinition`経由で渡す
+- [x] `provideContent`内でStateを読み取る（DBアクセスしない）
+
+#### Related
+- PR #12: fix: GlanceStateDefinitionを使用してウィジェット更新を確実に行う
+
+---
+
 ### [FIXED] TODO追加時にウィジェットが更新されない・既存が消える
 
 **Discovered:** 2026-01-10

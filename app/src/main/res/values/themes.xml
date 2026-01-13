@@ -7,5 +7,7 @@
 
     <style name="Theme.WidgetTodo.Dialog" parent="android:Theme.Material.Light.Dialog">
         <item name="android:windowNoTitle">true</item>
+        <item name="android:windowMinWidthMajor">85%</item>
+        <item name="android:windowMinWidthMinor">85%</item>
     </style>
 </resources>
