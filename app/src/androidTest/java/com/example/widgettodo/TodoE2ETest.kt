@@ -92,10 +92,16 @@ class TodoE2ETest {
         composeTestRule.onNodeWithText(testTodoTitle)
             .assertIsDisplayed()
 
-        // Click the complete button (check icon)
-        composeTestRule.onNodeWithContentDescription("完了")
+        // Click the complete button (check icon) - use first match to handle multiple todos
+        composeTestRule.onAllNodesWithContentDescription("完了")[0]
             .performClick()
         composeTestRule.waitForIdle()
+
+        // Wait for snackbar to appear (may take a moment)
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("タスクを削除しました")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify snackbar is shown
         composeTestRule.onNodeWithText("タスクを削除しました")
@@ -121,10 +127,16 @@ class TodoE2ETest {
             .performClick()
         composeTestRule.waitForIdle()
 
-        // Complete/delete it
-        composeTestRule.onNodeWithContentDescription("完了")
+        // Complete/delete it - use first match to handle multiple todos
+        composeTestRule.onAllNodesWithContentDescription("完了")[0]
             .performClick()
         composeTestRule.waitForIdle()
+
+        // Wait for snackbar to appear
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("元に戻す")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Click undo in snackbar
         composeTestRule.onNodeWithText("元に戻す")

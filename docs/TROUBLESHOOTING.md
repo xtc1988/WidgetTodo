@@ -128,6 +128,57 @@ Row(
 
 ## Test Issues
 
+### E2Eテストで「Expected 1 node but found N nodes」
+
+**Symptoms:**
+```
+java.lang.AssertionError: Failed to inject touch input.
+Expected exactly '1' node but found '2' nodes that satisfy: (ContentDescription = '完了')
+```
+
+**Cause:** 複数のTODOアイテムが存在する場合、各アイテムに同じContentDescriptionのボタンがある
+
+**Solution:**
+```kotlin
+// BAD: 1つだけ期待
+composeTestRule.onNodeWithContentDescription("完了")
+    .performClick()
+
+// GOOD: 最初の1つを選択
+composeTestRule.onAllNodesWithContentDescription("完了")[0]
+    .performClick()
+```
+
+**Prevention:** リスト内の要素をテストする場合は常に`onAllNodes`を使用
+
+---
+
+### E2Eテストで「component is not displayed」(Snackbar)
+
+**Symptoms:**
+```
+java.lang.AssertionError: Assert failed: The component is not displayed!
+```
+Snackbarが表示されていないエラー
+
+**Cause:** Snackbarの表示タイミングと`waitForIdle()`のタイミング不一致
+
+**Solution:**
+```kotlin
+// BAD: waitForIdleだけでは不十分
+composeTestRule.waitForIdle()
+composeTestRule.onNodeWithText("タスクを削除しました").assertIsDisplayed()
+
+// GOOD: 明示的にSnackbarが表示されるまで待機
+composeTestRule.waitUntil(timeoutMillis = 3000) {
+    composeTestRule.onAllNodesWithText("タスクを削除しました")
+        .fetchSemanticsNodes().isNotEmpty()
+}
+composeTestRule.onNodeWithText("タスクを削除しました").assertIsDisplayed()
+```
+
+---
+
 ### Instrumented テストで「No compose hierarchies found」
 
 **Symptoms:**

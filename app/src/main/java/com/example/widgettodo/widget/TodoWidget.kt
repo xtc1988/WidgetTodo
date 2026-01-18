@@ -78,6 +78,7 @@ class TodoWidget : GlanceAppWidget() {
                 Todo(
                     id = obj.getLong("id"),
                     title = obj.getString("title"),
+                    isCompleted = obj.optBoolean("isCompleted", false),
                     createdAt = obj.optLong("createdAt", System.currentTimeMillis())
                 )
             }
@@ -294,15 +295,27 @@ fun ZenTodoItem(
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             )
 
-            // チェックボックスインジケーター（行のどこをタップしても完了）
+            // チェックボックスインジケーター
             Box(
                 modifier = GlanceModifier
                     .size(20.dp)
                     .cornerRadius(4.dp)
-                    .background(ColorProvider(ZenWidgetColors.Sand)),
+                    .background(
+                        if (todo.isCompleted) ColorProvider(ZenWidgetColors.Moss)
+                        else ColorProvider(ZenWidgetColors.Sand)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                // 空のチェックボックスインジケーター
+                if (todo.isCompleted) {
+                    Text(
+                        text = "✓",
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ColorProvider(Color.White)
+                        )
+                    )
+                }
             }
 
             Spacer(modifier = GlanceModifier.width(6.dp))
@@ -344,27 +357,27 @@ class CompleteTodoAction : ActionCallback {
         parameters: ActionParameters
     ) {
         android.util.Log.d("CompleteTodoAction", "=== onAction CALLED ===")
-        android.util.Log.d("CompleteTodoAction", "parameters: $parameters")
-
         val todoId = parameters[TODO_ID_KEY]
-        android.util.Log.d("CompleteTodoAction", "todoId: $todoId")
-
         if (todoId == null) {
-            android.util.Log.e("CompleteTodoAction", "todoId is NULL! TODO_ID_KEY not found in parameters")
+            android.util.Log.e("CompleteTodoAction", "todoId is NULL!")
             return
         }
 
+        // Step 1: チェック済みに更新
         withContext(Dispatchers.IO) {
-            android.util.Log.d("CompleteTodoAction", "Deleting todo with id: $todoId")
-            // Singleton Databaseを使用
+            val db = TodoDatabase.getInstance(context)
+            db.todoDao().updateCompleted(todoId, true)
+        }
+        TodoWidgetUpdater.updateAll(context)
+
+        // Step 2: 遅延（500ms）
+        delay(500)
+
+        // Step 3: 削除
+        withContext(Dispatchers.IO) {
             val db = TodoDatabase.getInstance(context)
             db.todoDao().deleteById(todoId)
-            android.util.Log.d("CompleteTodoAction", "Delete completed")
         }
-
-        android.util.Log.d("CompleteTodoAction", "Updating widget via TodoWidgetUpdater...")
-        // TodoWidgetUpdaterを使用してState変更とウィジェット更新を適切にトリガー
         TodoWidgetUpdater.updateAll(context)
-        android.util.Log.d("CompleteTodoAction", "Widget updated")
     }
 }
