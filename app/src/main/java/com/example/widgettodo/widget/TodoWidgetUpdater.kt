@@ -40,6 +40,7 @@ object TodoWidgetUpdater {
                 put(JSONObject().apply {
                     put("id", todo.id)
                     put("title", todo.title)
+                    put("isCompleted", todo.isCompleted)
                     put("createdAt", todo.createdAt)
                 })
             }
